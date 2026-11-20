@@ -16,9 +16,9 @@ Coming next: thinking states, showing sources, undo for AI actions, showing unce
 
 ## Built with
 
-React, TypeScript, Tailwind CSS and Motion, bundled with Vite. Set in Bricolage Grotesque and Inter. Deployed to GitHub Pages on every push.
+React, TypeScript and Tailwind CSS, bundled with Vite. Set entirely in IBM Plex Mono, dark by default with a light mode. Deployed to GitHub Pages on every push.
 
-All animations calm down if your device is set to reduce motion.
+The caret and spinner stop moving if your device is set to reduce motion.
 
 ## Run it locally
 
@@ -34,7 +34,7 @@ npm run dev
 ```
 src/
 ├── App.tsx                  the page: intro, patterns, notes
-├── index.css                colours and fonts in one place
+├── index.css                colours, themes and fonts in one place
 └── patterns/
     └── streaming/
         ├── useStream.ts     fakes a model answering word by word

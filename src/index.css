@@ -1,38 +1,69 @@
 @import "tailwindcss";
-@import "@fontsource-variable/inter";
-@import "@fontsource-variable/bricolage-grotesque";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+@import "@fontsource/ibm-plex-mono/600.css";
 
-/* Design tokens: change these and the whole site follows */
-@theme {
-  --font-sans: "Inter Variable", system-ui, sans-serif;
-  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
-
-  --color-paper: #f7f6f3;
-  --color-ink: #16161a;
-  --color-muted: #6b6a70;
-  --color-line: #e4e2dc;
-  --color-accent: #ff5a00;
+/*
+  Colours live in plain CSS variables so the dark and light themes can swap them.
+  Tailwind reads them through @theme, so classes like bg-bg and text-dim just work.
+*/
+:root {
+  --bg: #0e0e0e;
+  --fg: #e6e4df;
+  --dim: #8b8a86;
+  --faint: #55544f;
+  --line: #262624;
+  --raise: #151514;
+  --accent: #ff7a3d;
+  color-scheme: dark;
 }
 
-body {
-  background: var(--color-paper);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
+[data-theme="light"] {
+  --bg: #f4f3ef;
+  --fg: #1a1a19;
+  --dim: #6d6c67;
+  --faint: #a3a29c;
+  --line: #dddcd6;
+  --raise: #ebeae5;
+  --accent: #d9530f;
+  color-scheme: light;
+}
+
+@theme inline {
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-dim: var(--dim);
+  --color-faint: var(--faint);
+  --color-line: var(--line);
+  --color-raise: var(--raise);
+  --color-accent: var(--accent);
+}
+
+html {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
 
-/* The blinking caret at the end of a streaming answer */
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* The block caret at the end of a streaming answer */
 @keyframes blink {
   50% { opacity: 0; }
 }
 .caret {
   display: inline-block;
-  width: 0.5em;
-  height: 1.1em;
-  margin-left: 2px;
+  width: 0.6em;
+  height: 1.15em;
+  margin-left: 1px;
   vertical-align: -0.2em;
-  border-radius: 2px;
-  background: var(--color-accent);
+  background: var(--accent);
   animation: blink 1s steps(1) infinite;
 }
 

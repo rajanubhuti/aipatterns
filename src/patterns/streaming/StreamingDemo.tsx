@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
 import { useStream } from './useStream'
 
-const QUESTION = 'How do I make a really good cup of masala chai?'
+const QUESTION = 'how do I make a really good cup of masala chai?'
 
 const ANSWER = `Start with water and milk in about equal parts, around one cup each for two people.
 
@@ -14,13 +13,13 @@ Pour in the milk and sugar, then let it rise to a boil twice. That second boil i
 
 Strain, pour from a little height for some froth, and drink it while it's hot.`
 
-const SPEEDS = { Slow: 140, Natural: 55, Fast: 18 } as const
+const SPEEDS = { slow: 140, natural: 55, fast: 18 } as const
 type Speed = keyof typeof SPEEDS
 type Mode = 'stream' | 'block'
 
 export function StreamingDemo() {
   const [mode, setMode] = useState<Mode>('stream')
-  const [speed, setSpeed] = useState<Speed>('Natural')
+  const [speed, setSpeed] = useState<Speed>('natural')
   const { shown, status, start, stop, reset } = useStream(ANSWER, {
     speed: SPEEDS[speed],
     allAtOnce: mode === 'block',
@@ -34,6 +33,7 @@ export function StreamingDemo() {
   const ask = () => {
     startedAt.current = performance.now()
     setFirstWordAfter(null)
+    setElapsed(0)
     start()
   }
 
@@ -57,7 +57,6 @@ export function StreamingDemo() {
   }, [mode, speed, reset])
 
   // Follow the text as it grows, but only if the reader is already at the bottom.
-  // Yanking someone back down while they scroll up to reread is a classic mistake.
   const box = useRef<HTMLDivElement>(null)
   const pinned = useRef(true)
   useEffect(() => {
@@ -71,133 +70,116 @@ export function StreamingDemo() {
 
   const busy = status === 'waiting' || status === 'streaming'
 
+  // Space or Enter anywhere in the demo asks or stops, like a real terminal.
+  const onKey = (e: React.KeyboardEvent) => {
+    if (e.target !== e.currentTarget) return
+    if (e.key === 'Enter') (busy ? stop : ask)()
+  }
+
   return (
-    <div className="rounded-3xl border border-line bg-white shadow-[0_1px_0_rgba(0,0,0,0.03),0_20px_40px_-24px_rgba(0,0,0,0.18)]">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-line px-5 py-4">
-        <Segmented
-          label="Mode"
+    <div className="border border-line" tabIndex={0} onKeyDown={onKey} aria-label="Streaming text demo">
+      {/* Title bar */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line px-4 py-2.5 text-dim">
+        <Toggle
+          label="mode"
           value={mode}
           onChange={setMode}
           options={[
-            { value: 'stream', label: 'Stream' },
-            { value: 'block', label: 'All at once' },
+            { value: 'stream', label: 'stream' },
+            { value: 'block', label: 'all at once' },
           ]}
         />
-        <Segmented
-          label="Speed"
+        <Toggle
+          label="speed"
           value={speed}
           onChange={setSpeed}
           options={(Object.keys(SPEEDS) as Speed[]).map((s) => ({ value: s, label: s }))}
         />
-        <div className="ml-auto text-sm text-muted tabular-nums" aria-live="polite">
-          {firstWordAfter !== null
-            ? `First words after ${firstWordAfter.toFixed(1)}s`
-            : status === 'waiting'
-              ? `Waiting ${elapsed.toFixed(1)}s`
-              : ' '}
-        </div>
       </div>
 
       {/* Conversation */}
-      <div ref={box} onScroll={onScroll} className="h-[360px] overflow-y-auto px-5 py-6 sm:px-8">
-        <div className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-ink px-4 py-2.5 text-[15px] text-white">
-          {QUESTION}
-        </div>
+      <div ref={box} onScroll={onScroll} className="h-[340px] overflow-y-auto px-4 py-5 leading-[1.75]">
+        <p>
+          <span className="text-dim">you ›</span> {QUESTION}
+        </p>
 
-        <div className="mt-6 max-w-[62ch] text-[15px] leading-7">
-          <AnimatePresence mode="wait">
-            {status === 'idle' && (
-              <motion.p key="idle" className="text-muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                Press Ask to see the answer arrive.
-              </motion.p>
+        <div className="mt-4 flex gap-[1ch]">
+          <span className="shrink-0 text-accent">ai ›</span>
+          <div className="min-w-0 max-w-[64ch]">
+            {status === 'idle' && <span className="text-faint">press ask, or hit enter</span>}
+            {status === 'waiting' && <Thinking long={mode === 'block'} />}
+            {shown && (
+              <p className="whitespace-pre-wrap">
+                {shown}
+                {status === 'streaming' && <span className="caret" aria-hidden />}
+              </p>
             )}
-            {status === 'waiting' && (
-              <motion.div key="waiting" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <Thinking long={mode === 'block'} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {shown && (
-            <p className="whitespace-pre-wrap">
-              {shown}
-              {status === 'streaming' && <span className="caret" aria-hidden />}
-            </p>
-          )}
-
-          {status === 'stopped' && (
-            <motion.p initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="mt-3 text-sm text-muted">
-              Stopped. What was written so far is kept.
-            </motion.p>
-          )}
+            {status === 'stopped' && <p className="mt-3 text-dim">[stopped · what was written is kept]</p>}
+          </div>
         </div>
       </div>
 
-      {/* Action */}
-      <div className="flex items-center justify-between gap-4 border-t border-line px-5 py-4">
-        <p className="text-sm text-muted">
-          {mode === 'stream' ? 'Words appear as the model writes them.' : 'Nothing shows until the whole answer is ready.'}
-        </p>
-        <AnimatePresence mode="popLayout" initial={false}>
-          {busy ? (
-            <motion.button
-              key="stop"
-              onClick={stop}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex items-center gap-2 rounded-full border border-ink px-5 py-2.5 text-sm font-medium transition-colors hover:bg-ink hover:text-white"
-            >
-              <span className="size-2.5 rounded-[2px] bg-current" aria-hidden />
-              Stop
-            </motion.button>
+      {/* Status bar */}
+      <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-2.5">
+        <p className="text-dim tabular-nums" aria-live="polite">
+          <span className="text-faint">status</span> {status}
+          <span className="text-faint"> · </span>
+          {firstWordAfter !== null ? (
+            <>
+              <span className="text-faint">first words</span> {firstWordAfter.toFixed(1)}s
+            </>
+          ) : status === 'waiting' ? (
+            <>
+              <span className="text-faint">waiting</span> {elapsed.toFixed(1)}s
+            </>
           ) : (
-            <motion.button
-              key="ask"
-              onClick={ask}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="rounded-full bg-accent px-5 py-2.5 text-sm font-medium text-white transition-transform hover:scale-[1.03] active:scale-[0.97]"
-            >
-              {status === 'idle' ? 'Ask' : 'Ask again'}
-            </motion.button>
+            <span className="text-faint">{mode === 'stream' ? 'words appear as they are written' : 'nothing shows until it is done'}</span>
           )}
-        </AnimatePresence>
+        </p>
+        {busy ? (
+          <button onClick={stop} className="shrink-0 border border-fg px-3 py-1 transition-colors hover:bg-fg hover:text-bg">
+            ■ stop
+          </button>
+        ) : (
+          <button onClick={ask} className="shrink-0 border border-accent px-3 py-1 text-accent transition-colors hover:bg-accent hover:text-bg">
+            {status === 'idle' ? 'ask ↵' : 'ask again ↵'}
+          </button>
+        )}
       </div>
     </div>
   )
 }
+
+// A spinner made of text, so it matches the terminal look.
+const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
 function Thinking({ long }: { long: boolean }) {
+  const [i, setI] = useState(0)
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduce) return
+    const id = window.setInterval(() => setI((n) => (n + 1) % FRAMES.length), 80)
+    return () => window.clearInterval(id)
+  }, [])
   return (
-    <div className="flex items-center gap-2 text-muted">
-      <span className="flex gap-1" aria-hidden>
-        {[0, 1, 2].map((i) => (
-          <motion.span
-            key={i}
-            className="size-1.5 rounded-full bg-muted"
-            animate={{ opacity: [0.25, 1, 0.25] }}
-            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.18 }}
-          />
-        ))}
-      </span>
-      <span className="text-sm">{long ? 'Writing the full answer…' : 'Thinking…'}</span>
-    </div>
+    <span className="text-dim">
+      <span className="text-accent">{FRAMES[i]}</span> {long ? 'writing the full answer' : 'thinking'}
+    </span>
   )
 }
 
-type SegmentedProps<T extends string> = {
+type ToggleProps<T extends string> = {
   label: string
   value: T
   onChange: (v: T) => void
   options: { value: T; label: string }[]
 }
 
-function Segmented<T extends string>({ label, value, onChange, options }: SegmentedProps<T>) {
+// Options shown inline, the chosen one in [brackets].
+function Toggle<T extends string>({ label, value, onChange, options }: ToggleProps<T>) {
   return (
-    <div role="radiogroup" aria-label={label} className="relative flex rounded-full bg-paper p-1">
+    <div role="radiogroup" aria-label={label} className="flex items-center gap-[1ch]">
+      <span className="text-faint">{label}</span>
       {options.map((o) => {
         const active = o.value === value
         return (
@@ -206,16 +188,9 @@ function Segmented<T extends string>({ label, value, onChange, options }: Segmen
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={`relative rounded-full px-3.5 py-1.5 text-sm transition-colors ${active ? 'text-ink' : 'text-muted hover:text-ink'}`}
+            className={active ? 'text-fg' : 'text-dim hover:text-fg'}
           >
-            {active && (
-              <motion.span
-                layoutId={`pill-${label}`}
-                className="absolute inset-0 rounded-full bg-white shadow-sm"
-                transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
-              />
-            )}
-            <span className="relative">{o.label}</span>
+            {active ? `[${o.label}]` : ` ${o.label} `}
           </button>
         )
       })}
