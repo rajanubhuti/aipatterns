@@ -1,133 +1,62 @@
 @import "tailwindcss";
+@import "@fontsource-variable/jetbrains-mono";
 
 /*
-  Brutalist terminal style: Courier, pure black and white, thick borders.
+  Dark, quiet, technical. One accent: the orange from my portfolio.
   Colours live in CSS variables so the dark and light themes can swap them.
 */
 :root {
-  --bg: #0e0e0e;
-  --fg: #f2f2f2;
-  --dim: #a8a8a8;
-  --faint: #6a6a6a;
-  --bar: #1a1a1a;
+  --bg: #0b0b0c;
+  --panel: #111113;
+  --fg: #ededeb;
+  --dim: #8e8d89;
+  --faint: #55544f;
+  --line: #222225;
+  --accent: #ff5a00;
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-  --bg: #ffffff;
-  --fg: #000000;
-  --dim: #555555;
-  --faint: #8a8a8a;
-  --bar: #f0f0f0;
+  --bg: #fafaf9;
+  --panel: #f2f2f0;
+  --fg: #111111;
+  --dim: #6a6965;
+  --faint: #a8a7a2;
+  --line: #e2e1dd;
+  --accent: #e64f00;
   color-scheme: light;
 }
 
 @theme inline {
-  --font-mono: "Courier New", Courier, monospace;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
   --color-bg: var(--bg);
+  --color-panel: var(--panel);
   --color-fg: var(--fg);
   --color-dim: var(--dim);
   --color-faint: var(--faint);
-  --color-bar: var(--bar);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
 }
 
 html {
-  scroll-behavior: smooth;
-}
-
-body {
-  margin: 0;
-  padding: 0 16px 32px;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-mono);
-  font-size: 15px;
+  font-size: 13.5px;
   line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background: var(--fg);
-  color: var(--bg);
+  background: var(--accent);
+  color: #fff;
 }
 
-/* Section label: an inverted block */
-.label {
-  display: inline-block;
-  margin: 0 0 24px;
-  padding: 0.3em 0.8em;
-  background: var(--fg);
-  color: var(--bg);
-  border: 4px solid var(--fg);
-  font-size: 16px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-/* Small inverted tag */
-.tag {
-  display: inline-block;
-  padding: 0.2em 0.7em;
-  background: var(--fg);
-  color: var(--bg);
-  border: 2px solid var(--fg);
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.7;
-  text-transform: uppercase;
-}
-
-/* Button: an outlined tag that fills in on hover */
-.btn {
-  display: inline-block;
-  padding: 0.25em 0.8em;
-  border: 2px solid var(--fg);
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-.btn:hover,
-.btn:focus-visible,
-.btn.solid {
-  background: var(--fg);
-  color: var(--bg);
-}
-.btn.solid:hover {
-  background: transparent;
-  color: var(--fg);
-}
-
-/* An entry with the thick left rule */
-.entry {
-  border-left: 4px solid var(--fg);
-  padding-left: 18px;
-}
-
-/* A mac style terminal window */
-.window {
-  border: 4px solid var(--fg);
-}
-.window-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--bar);
-  border-bottom: 2px solid var(--fg);
-}
-.window-bar i {
-  width: 10px;
-  height: 10px;
-  display: block;
-}
-
-/* Dotted leader between a project name and its meta, like a table of contents */
-.leader {
-  flex: 1;
-  height: 1px;
-  margin: 0 12px;
-  background-image: linear-gradient(to right, var(--faint) 50%, transparent 0);
-  background-size: 3px 1px;
+/* A faint dot grid behind the demo, like a design canvas */
+.canvas {
+  background-color: var(--panel);
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 16px 16px;
 }
 
 /* The block caret at the end of a streaming answer */
@@ -136,14 +65,22 @@ body {
 }
 .caret {
   display: inline-block;
-  width: 0.6em;
-  height: 1.1em;
+  width: 0.55em;
+  height: 1.15em;
+  margin-left: 1px;
   vertical-align: -0.2em;
-  background: var(--fg);
+  background: var(--accent);
   animation: blink 1s steps(1) infinite;
 }
 
+/* Brief highlight when a value in the state panel changes */
+@keyframes flash {
+  from { color: var(--accent); }
+}
+.flash {
+  animation: flash 0.6s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-  .caret { animation: none; }
+  .caret, .flash { animation: none; }
 }

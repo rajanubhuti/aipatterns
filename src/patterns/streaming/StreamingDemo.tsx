@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStream } from './useStream'
 
-const QUESTION = 'how do I make a really good cup of masala chai?'
+const QUESTION = 'How do I make a really good cup of masala chai?'
 
 const ANSWER = `Start with water and milk in about equal parts, around one cup each for two people.
 
@@ -13,6 +13,7 @@ Pour in the milk and sugar, then let it rise to a boil twice. That second boil i
 
 Strain, pour from a little height for some froth, and drink it while it's hot.`
 
+const TOTAL_WORDS = ANSWER.match(/\S+/g)?.length ?? 0
 const SPEEDS = { slow: 140, natural: 55, fast: 18 } as const
 type Speed = keyof typeof SPEEDS
 type Mode = 'stream' | 'block'
@@ -43,72 +44,53 @@ export function StreamingDemo() {
     }
   }, [shown, firstWordAfter])
 
-  // A live "waiting" counter, so the cost of not streaming is visible.
+  // A live clock while anything is happening.
+  const busy = status === 'waiting' || status === 'streaming'
   useEffect(() => {
-    if (status !== 'waiting') return
+    if (!busy) return
     const id = window.setInterval(() => setElapsed((performance.now() - startedAt.current) / 1000), 100)
     return () => window.clearInterval(id)
-  }, [status])
+  }, [busy])
 
   // Changing a setting starts fresh, so comparisons are fair.
   useEffect(() => {
     reset()
     setFirstWordAfter(null)
+    setElapsed(0)
   }, [mode, speed, reset])
 
   // Follow the text as it grows, but only if the reader is already at the bottom.
   const box = useRef<HTMLDivElement>(null)
-  const pinned = useRef(true)
+  const pinnedRef = useRef(true)
+  const [pinned, setPinned] = useState(true)
   useEffect(() => {
     const el = box.current
-    if (el && pinned.current) el.scrollTop = el.scrollHeight
+    if (el && pinnedRef.current) el.scrollTop = el.scrollHeight
   }, [shown])
   const onScroll = () => {
     const el = box.current
-    if (el) pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 24
+    if (!el) return
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 24
+    pinnedRef.current = atBottom
+    setPinned(atBottom)
   }
 
-  const busy = status === 'waiting' || status === 'streaming'
+  const wordsShown = shown.match(/\S+/g)?.length ?? 0
 
   return (
-    <div className="window">
-      {/* Title bar */}
-      <div className="window-bar">
-        <i className="bg-[#ff5f56]" aria-hidden />
-        <i className="bg-[#ffbd2e]" aria-hidden />
-        <i className="bg-[#27c93f]" aria-hidden />
-        <span className="ml-3 text-[12px] text-dim">stream.demo</span>
-      </div>
+    <div className="grid border border-line lg:grid-cols-[1fr_250px]">
+      {/* The demo */}
+      <div className="flex min-w-0 flex-col">
+        <div className="flex flex-wrap items-center gap-x-8 gap-y-2 border-b border-line px-5 py-3">
+          <Choice label="mode" value={mode} onChange={setMode} options={[['stream', 'stream'], ['block', 'all at once']]} />
+          <Choice label="speed" value={speed} onChange={setSpeed} options={(Object.keys(SPEEDS) as Speed[]).map((s) => [s, s])} />
+        </div>
 
-      {/* Controls */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b-2 border-fg px-5 py-3 text-[12px]">
-        <Toggle
-          label="mode"
-          value={mode}
-          onChange={setMode}
-          options={[
-            { value: 'stream', label: 'stream' },
-            { value: 'block', label: 'all at once' },
-          ]}
-        />
-        <Toggle
-          label="speed"
-          value={speed}
-          onChange={setSpeed}
-          options={(Object.keys(SPEEDS) as Speed[]).map((s) => ({ value: s, label: s }))}
-        />
-      </div>
+        <div ref={box} onScroll={onScroll} className="canvas h-[360px] overflow-y-auto px-5 py-6 sm:px-8">
+          <div className="ml-auto w-fit max-w-[85%] border border-line bg-bg px-4 py-2.5">{QUESTION}</div>
 
-      {/* Conversation */}
-      <div ref={box} onScroll={onScroll} className="h-[340px] overflow-y-auto px-5 py-5">
-        <p>
-          <b>you &gt;</b> {QUESTION}
-        </p>
-
-        <div className="mt-4 flex gap-[1ch]">
-          <b className="shrink-0">ai &gt;</b>
-          <div className="min-w-0 max-w-[70ch]">
-            {status === 'idle' && <span className="text-faint">press ask to see the answer arrive</span>}
+          <div className="mt-6 max-w-[64ch]">
+            {status === 'idle' && <span className="text-faint">Press ask to see the answer arrive.</span>}
             {status === 'waiting' && <Thinking long={mode === 'block'} />}
             {shown && (
               <p className="whitespace-pre-wrap">
@@ -116,77 +98,106 @@ export function StreamingDemo() {
                 {status === 'streaming' && <span className="caret" aria-hidden />}
               </p>
             )}
-            {status === 'stopped' && <p className="mt-3 text-dim">[stopped · what was written is kept]</p>}
+            {status === 'stopped' && <p className="mt-3 text-dim">Stopped. What was written is kept.</p>}
           </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 border-t border-line px-5 py-3">
+          <span className="text-dim">{mode === 'stream' ? 'Words appear as they are written.' : 'Nothing shows until the answer is done.'}</span>
+          {busy ? (
+            <button onClick={stop} className="flex shrink-0 items-center gap-2 border border-fg px-4 py-1.5 transition-colors hover:bg-fg hover:text-bg">
+              <span className="size-2 bg-current" aria-hidden /> stop
+            </button>
+          ) : (
+            <button onClick={ask} className="shrink-0 bg-accent px-4 py-1.5 text-white transition-opacity hover:opacity-85">
+              {status === 'idle' ? 'ask' : 'ask again'} ↵
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Status bar */}
-      <div className="flex items-center justify-between gap-4 border-t-2 border-fg px-5 py-3 text-[12px]">
-        <p className="text-dim tabular-nums" aria-live="polite">
-          status: <span className="text-fg">{status}</span>
-          {' · '}
-          {firstWordAfter !== null
-            ? <>first words: <span className="text-fg">{firstWordAfter.toFixed(1)}s</span></>
-            : status === 'waiting'
-              ? <>waiting: <span className="text-fg">{elapsed.toFixed(1)}s</span></>
-              : mode === 'stream' ? 'words appear as they are written' : 'nothing shows until it is done'}
+      {/* Live state: what the code is doing right now */}
+      <aside className="border-t border-line bg-panel px-5 py-4 lg:border-l lg:border-t-0" aria-label="Live state">
+        <p className="mb-3 text-dim">// live state</p>
+        <dl className="space-y-1.5">
+          <Row k="status" v={status} accent={busy} />
+          <Row k="words" v={`${wordsShown} / ${TOTAL_WORDS}`} />
+          <Row k="elapsed" v={`${elapsed.toFixed(1)}s`} />
+          <Row k="first word" v={firstWordAfter === null ? '·' : `${firstWordAfter.toFixed(1)}s`} />
+          <Row k="follow scroll" v={pinned ? 'on' : 'paused'} />
+        </dl>
+        <Bar value={wordsShown} total={TOTAL_WORDS} />
+        <p className="mt-5 text-[12px] leading-relaxed text-faint">
+          Scroll up in the answer while it streams and watch "follow scroll" pause.
         </p>
-        {busy ? (
-          <button onClick={stop} className="btn shrink-0">
-            ■ Stop
-          </button>
-        ) : (
-          <button onClick={ask} className="btn solid shrink-0">
-            {status === 'idle' ? 'Ask ↵' : 'Ask again ↵'}
-          </button>
-        )}
-      </div>
+      </aside>
     </div>
   )
 }
 
-// A spinner made of text, so it matches the terminal look.
-const FRAMES = ['|', '/', '-', '\\']
+function Row({ k, v, accent }: { k: string; v: string; accent?: boolean }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="text-dim">{k}</dt>
+      {/* key={v} replays the flash animation every time the value changes */}
+      <dd key={v} className={`flash tabular-nums ${accent ? 'text-accent' : ''}`}>
+        {v}
+      </dd>
+    </div>
+  )
+}
+
+// Progress drawn with characters, 20 cells wide.
+function Bar({ value, total }: { value: number; total: number }) {
+  const cells = 20
+  const filled = total ? Math.round((value / total) * cells) : 0
+  return (
+    <p className="mt-4 tracking-[-0.05em]" aria-hidden>
+      <span className="text-accent">{'█'.repeat(filled)}</span>
+      <span className="text-faint">{'░'.repeat(cells - filled)}</span>
+    </p>
+  )
+}
+
+const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 
 function Thinking({ long }: { long: boolean }) {
   const [i, setI] = useState(0)
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-    const id = window.setInterval(() => setI((n) => (n + 1) % FRAMES.length), 120)
+    const id = window.setInterval(() => setI((n) => (n + 1) % FRAMES.length), 80)
     return () => window.clearInterval(id)
   }, [])
   return (
     <span className="text-dim">
-      [{FRAMES[i]}] {long ? 'writing the full answer' : 'thinking'}
+      <span className="text-accent">{FRAMES[i]}</span> {long ? 'writing the full answer…' : 'thinking…'}
     </span>
   )
 }
 
-type ToggleProps<T extends string> = {
+type ChoiceProps<T extends string> = {
   label: string
   value: T
   onChange: (v: T) => void
-  options: { value: T; label: string }[]
+  options: [T, string][]
 }
 
-// Options shown inline as tags: the chosen one is filled in.
-function Toggle<T extends string>({ label, value, onChange, options }: ToggleProps<T>) {
+// Inline options; the chosen one is underlined in the accent colour.
+function Choice<T extends string>({ label, value, onChange, options }: ChoiceProps<T>) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap items-center gap-2">
-      <span className="text-dim">{label}:</span>
-      {options.map((o) => {
-        const active = o.value === value
+    <div role="radiogroup" aria-label={label} className="flex items-center gap-3">
+      <span className="text-faint">{label}</span>
+      {options.map(([v, text]) => {
+        const active = v === value
         return (
           <button
-            key={o.value}
+            key={v}
             role="radio"
             aria-checked={active}
-            onClick={() => onChange(o.value)}
-            className={`btn ${active ? 'solid pointer-events-none' : ''}`}
-            style={{ fontSize: 11, padding: '0.1em 0.6em' }}
+            onClick={() => onChange(v)}
+            className={`underline-offset-[6px] ${active ? 'text-fg underline decoration-accent decoration-2' : 'text-dim hover:text-fg'}`}
           >
-            {o.label}
+            {text}
           </button>
         )
       })}

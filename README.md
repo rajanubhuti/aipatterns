@@ -16,7 +16,7 @@ Coming next: thinking states, showing sources, undo for AI actions, showing unce
 
 ## Built with
 
-React, TypeScript and Tailwind CSS, bundled with Vite. Brutalist terminal style in Courier, pure black and white, dark by default with a light mode. Deployed to GitHub Pages on every push.
+React, TypeScript and Tailwind CSS, bundled with Vite. Set in JetBrains Mono, dark by default with a light mode. Each demo has a live state panel showing what the code is doing as you use it. Deployed to GitHub Pages on every push.
 
 The caret and spinner stop moving if your device is set to reduce motion.
 
