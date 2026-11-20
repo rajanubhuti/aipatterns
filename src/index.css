@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/bricolage-grotesque";
+
+/* Design tokens: change these and the whole site follows */
+@theme {
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", system-ui, sans-serif;
+
+  --color-paper: #f7f6f3;
+  --color-ink: #16161a;
+  --color-muted: #6b6a70;
+  --color-line: #e4e2dc;
+  --color-accent: #ff5a00;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The blinking caret at the end of a streaming answer */
+@keyframes blink {
+  50% { opacity: 0; }
+}
+.caret {
+  display: inline-block;
+  width: 0.5em;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: -0.2em;
+  border-radius: 2px;
+  background: var(--color-accent);
+  animation: blink 1s steps(1) infinite;
+}
+
+/* Respect people who turn motion off on their device */
+@media (prefers-reduced-motion: reduce) {
+  .caret { animation: none; }
+}
