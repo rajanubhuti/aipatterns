@@ -70,16 +70,18 @@ export function StreamingDemo() {
 
   const busy = status === 'waiting' || status === 'streaming'
 
-  // Space or Enter anywhere in the demo asks or stops, like a real terminal.
-  const onKey = (e: React.KeyboardEvent) => {
-    if (e.target !== e.currentTarget) return
-    if (e.key === 'Enter') (busy ? stop : ask)()
-  }
-
   return (
-    <div className="border border-line" tabIndex={0} onKeyDown={onKey} aria-label="Streaming text demo">
+    <div className="window">
       {/* Title bar */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-line px-4 py-2.5 text-dim">
+      <div className="window-bar">
+        <i className="bg-[#ff5f56]" aria-hidden />
+        <i className="bg-[#ffbd2e]" aria-hidden />
+        <i className="bg-[#27c93f]" aria-hidden />
+        <span className="ml-3 text-[12px] text-dim">stream.demo</span>
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b-2 border-fg px-5 py-3 text-[12px]">
         <Toggle
           label="mode"
           value={mode}
@@ -98,15 +100,15 @@ export function StreamingDemo() {
       </div>
 
       {/* Conversation */}
-      <div ref={box} onScroll={onScroll} className="h-[340px] overflow-y-auto px-4 py-5 leading-[1.75]">
+      <div ref={box} onScroll={onScroll} className="h-[340px] overflow-y-auto px-5 py-5">
         <p>
-          <span className="text-dim">you ›</span> {QUESTION}
+          <b>you &gt;</b> {QUESTION}
         </p>
 
         <div className="mt-4 flex gap-[1ch]">
-          <span className="shrink-0 text-accent">ai ›</span>
-          <div className="min-w-0 max-w-[64ch]">
-            {status === 'idle' && <span className="text-faint">press ask, or hit enter</span>}
+          <b className="shrink-0">ai &gt;</b>
+          <div className="min-w-0 max-w-[70ch]">
+            {status === 'idle' && <span className="text-faint">press ask to see the answer arrive</span>}
             {status === 'waiting' && <Thinking long={mode === 'block'} />}
             {shown && (
               <p className="whitespace-pre-wrap">
@@ -120,29 +122,23 @@ export function StreamingDemo() {
       </div>
 
       {/* Status bar */}
-      <div className="flex items-center justify-between gap-4 border-t border-line px-4 py-2.5">
+      <div className="flex items-center justify-between gap-4 border-t-2 border-fg px-5 py-3 text-[12px]">
         <p className="text-dim tabular-nums" aria-live="polite">
-          <span className="text-faint">status</span> {status}
-          <span className="text-faint"> · </span>
-          {firstWordAfter !== null ? (
-            <>
-              <span className="text-faint">first words</span> {firstWordAfter.toFixed(1)}s
-            </>
-          ) : status === 'waiting' ? (
-            <>
-              <span className="text-faint">waiting</span> {elapsed.toFixed(1)}s
-            </>
-          ) : (
-            <span className="text-faint">{mode === 'stream' ? 'words appear as they are written' : 'nothing shows until it is done'}</span>
-          )}
+          status: <span className="text-fg">{status}</span>
+          {' · '}
+          {firstWordAfter !== null
+            ? <>first words: <span className="text-fg">{firstWordAfter.toFixed(1)}s</span></>
+            : status === 'waiting'
+              ? <>waiting: <span className="text-fg">{elapsed.toFixed(1)}s</span></>
+              : mode === 'stream' ? 'words appear as they are written' : 'nothing shows until it is done'}
         </p>
         {busy ? (
-          <button onClick={stop} className="shrink-0 border border-fg px-3 py-1 transition-colors hover:bg-fg hover:text-bg">
-            ■ stop
+          <button onClick={stop} className="btn shrink-0">
+            ■ Stop
           </button>
         ) : (
-          <button onClick={ask} className="shrink-0 border border-accent px-3 py-1 text-accent transition-colors hover:bg-accent hover:text-bg">
-            {status === 'idle' ? 'ask ↵' : 'ask again ↵'}
+          <button onClick={ask} className="btn solid shrink-0">
+            {status === 'idle' ? 'Ask ↵' : 'Ask again ↵'}
           </button>
         )}
       </div>
@@ -151,19 +147,18 @@ export function StreamingDemo() {
 }
 
 // A spinner made of text, so it matches the terminal look.
-const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+const FRAMES = ['|', '/', '-', '\\']
 
 function Thinking({ long }: { long: boolean }) {
   const [i, setI] = useState(0)
   useEffect(() => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduce) return
-    const id = window.setInterval(() => setI((n) => (n + 1) % FRAMES.length), 80)
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const id = window.setInterval(() => setI((n) => (n + 1) % FRAMES.length), 120)
     return () => window.clearInterval(id)
   }, [])
   return (
     <span className="text-dim">
-      <span className="text-accent">{FRAMES[i]}</span> {long ? 'writing the full answer' : 'thinking'}
+      [{FRAMES[i]}] {long ? 'writing the full answer' : 'thinking'}
     </span>
   )
 }
@@ -175,11 +170,11 @@ type ToggleProps<T extends string> = {
   options: { value: T; label: string }[]
 }
 
-// Options shown inline, the chosen one in [brackets].
+// Options shown inline as tags: the chosen one is filled in.
 function Toggle<T extends string>({ label, value, onChange, options }: ToggleProps<T>) {
   return (
-    <div role="radiogroup" aria-label={label} className="flex items-center gap-[1ch]">
-      <span className="text-faint">{label}</span>
+    <div role="radiogroup" aria-label={label} className="flex flex-wrap items-center gap-2">
+      <span className="text-dim">{label}:</span>
       {options.map((o) => {
         const active = o.value === value
         return (
@@ -188,9 +183,10 @@ function Toggle<T extends string>({ label, value, onChange, options }: TogglePro
             role="radio"
             aria-checked={active}
             onClick={() => onChange(o.value)}
-            className={active ? 'text-fg' : 'text-dim hover:text-fg'}
+            className={`btn ${active ? 'solid pointer-events-none' : ''}`}
+            style={{ fontSize: 11, padding: '0.1em 0.6em' }}
           >
-            {active ? `[${o.label}]` : ` ${o.label} `}
+            {o.label}
           </button>
         )
       })}

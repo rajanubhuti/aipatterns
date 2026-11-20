@@ -1,56 +1,133 @@
 @import "tailwindcss";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/500.css";
-@import "@fontsource/ibm-plex-mono/600.css";
 
 /*
-  Colours live in plain CSS variables so the dark and light themes can swap them.
-  Tailwind reads them through @theme, so classes like bg-bg and text-dim just work.
+  Brutalist terminal style: Courier, pure black and white, thick borders.
+  Colours live in CSS variables so the dark and light themes can swap them.
 */
 :root {
   --bg: #0e0e0e;
-  --fg: #e6e4df;
-  --dim: #8b8a86;
-  --faint: #55544f;
-  --line: #262624;
-  --raise: #151514;
-  --accent: #ff7a3d;
+  --fg: #f2f2f2;
+  --dim: #a8a8a8;
+  --faint: #6a6a6a;
+  --bar: #1a1a1a;
   color-scheme: dark;
 }
 
 [data-theme="light"] {
-  --bg: #f4f3ef;
-  --fg: #1a1a19;
-  --dim: #6d6c67;
-  --faint: #a3a29c;
-  --line: #dddcd6;
-  --raise: #ebeae5;
-  --accent: #d9530f;
+  --bg: #ffffff;
+  --fg: #000000;
+  --dim: #555555;
+  --faint: #8a8a8a;
+  --bar: #f0f0f0;
   color-scheme: light;
 }
 
 @theme inline {
-  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-mono: "Courier New", Courier, monospace;
   --color-bg: var(--bg);
   --color-fg: var(--fg);
   --color-dim: var(--dim);
   --color-faint: var(--faint);
-  --color-line: var(--line);
-  --color-raise: var(--raise);
-  --color-accent: var(--accent);
+  --color-bar: var(--bar);
 }
 
 html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  padding: 0 16px 32px;
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-mono);
-  font-size: 14px;
-  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 ::selection {
-  background: var(--accent);
+  background: var(--fg);
   color: var(--bg);
+}
+
+/* Section label: an inverted block */
+.label {
+  display: inline-block;
+  margin: 0 0 24px;
+  padding: 0.3em 0.8em;
+  background: var(--fg);
+  color: var(--bg);
+  border: 4px solid var(--fg);
+  font-size: 16px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* Small inverted tag */
+.tag {
+  display: inline-block;
+  padding: 0.2em 0.7em;
+  background: var(--fg);
+  color: var(--bg);
+  border: 2px solid var(--fg);
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.7;
+  text-transform: uppercase;
+}
+
+/* Button: an outlined tag that fills in on hover */
+.btn {
+  display: inline-block;
+  padding: 0.25em 0.8em;
+  border: 2px solid var(--fg);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.btn:hover,
+.btn:focus-visible,
+.btn.solid {
+  background: var(--fg);
+  color: var(--bg);
+}
+.btn.solid:hover {
+  background: transparent;
+  color: var(--fg);
+}
+
+/* An entry with the thick left rule */
+.entry {
+  border-left: 4px solid var(--fg);
+  padding-left: 18px;
+}
+
+/* A mac style terminal window */
+.window {
+  border: 4px solid var(--fg);
+}
+.window-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bar);
+  border-bottom: 2px solid var(--fg);
+}
+.window-bar i {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+/* Dotted leader between a project name and its meta, like a table of contents */
+.leader {
+  flex: 1;
+  height: 1px;
+  margin: 0 12px;
+  background-image: linear-gradient(to right, var(--faint) 50%, transparent 0);
+  background-size: 3px 1px;
 }
 
 /* The block caret at the end of a streaming answer */
@@ -60,14 +137,13 @@ html {
 .caret {
   display: inline-block;
   width: 0.6em;
-  height: 1.15em;
-  margin-left: 1px;
+  height: 1.1em;
   vertical-align: -0.2em;
-  background: var(--accent);
+  background: var(--fg);
   animation: blink 1s steps(1) infinite;
 }
 
-/* Respect people who turn motion off on their device */
 @media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
   .caret { animation: none; }
 }
